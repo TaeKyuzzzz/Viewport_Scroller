@@ -71,6 +71,7 @@ function IsMouseInShape(x, y, shape) {
     return false;
 }
 
+// https://www.youtube.com/watch?v=7PYvx8u_9Sk 여기 참조
 const CanvasMouseDown = (event) => {
     event.preventDefault();
 
