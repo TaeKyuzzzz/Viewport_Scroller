@@ -1,5 +1,10 @@
+const totalLength = 2000; // meter 단위. (2km)
+let startPoint = 0, endPoint = 0;
+
 const title_bar = document.getElementById("title-bar");
 const viewport_controller = document.getElementById("Viewport-controller");
+const startText = document.getElementById("start-point");
+const endText = document.getElementById("end-point");
 const scroll_canvas = document.getElementById("scroll-canvas");
 const ctx = scroll_canvas.getContext('2d');
 
@@ -7,15 +12,25 @@ let initialX = 0;
 let initialY = 0;
 let isMoving = false;
 
-const scrollerWidth = parseInt(scroll_canvas.style.width.replace('px','')) - 110;
+const scrollerWidth = parseInt(scroll_canvas.style.width.replace('px','')) - 30;
 const scrollerHeight = parseInt(scroll_canvas.style.height.replace('px','')) - 20;
 const scrollerTop = 10;
 const scrollerLeft = 15;
 
+console.log('scroller width: ', scrollerWidth);
+console.log('scroller height: ', scrollerHeight);
+
+let scrollButtonLeft = scrollerLeft;
+let scrollButtonTop = scrollerTop + 1;
 let scrollButtonWidth = 40;
 let scrollButtonHeight = scrollerHeight - 2;
 
+let scale = 1;
+let initButtonWidth = scrollButtonWidth;
+let IsButtonMoving = false;
+
 function draw() {
+    ctx.clearRect(0, 0, scrollerWidth + 30, scrollerHeight + 20);
 // 스크롤러 테두리 그리기
     ctx.beginPath();
     ctx.strokeStyle = '#535353';
@@ -25,7 +40,7 @@ function draw() {
 // 스크롤러 버튼 그리기
     ctx.beginPath();
     ctx.fillStyle = '#b8b8b8';
-    ctx.rect(scrollerLeft, scrollerTop + 1, scrollButtonWidth, scrollButtonHeight);
+    ctx.rect(scrollButtonLeft, scrollButtonTop + 1, scrollButtonWidth, scrollButtonHeight);
     ctx.stroke();
     ctx.fill();
 
@@ -57,6 +72,32 @@ title_bar.addEventListener('mouseup', (e) => {
     isMoving = false;
 });
 
+viewport_controller.addEventListener('wheel', (event) => {
+    scale += event.deltaY * -0.01;
+    if (scale > 2) {
+        scale = 2;
+    }
+    if (scale < 0.5) {
+        scale = 0.5;
+    }
+    const beforeScaled = scrollButtonWidth;
+    scrollButtonWidth *= scale;
+    if (scrollButtonWidth > initButtonWidth * 8) {
+        scrollButtonWidth = initButtonWidth * 8;
+    } else if (scrollButtonWidth < initButtonWidth / 2) {
+        scrollButtonWidth = initButtonWidth / 2;
+    } else if (scrollButtonLeft + scrollButtonWidth > scrollerLeft + scrollerWidth) {
+        scrollButtonWidth = beforeScaled;
+    }
+
+    // 텍스트 갱신
+    startPoint = 2000 * ((scrollButtonLeft - scrollerLeft) / scrollerWidth);
+    endPoint = 2000 * ((scrollButtonLeft + scrollButtonWidth - scrollerLeft) / scrollerWidth);
+
+    startText.setAttribute("value", startPoint.toString(10));
+    endText.setAttribute("value", endPoint.toString(10));
+})
+
 
 function IsMouseInShape(x, y, shape) {
     const shape_left = shape.x;
@@ -72,12 +113,49 @@ function IsMouseInShape(x, y, shape) {
 }
 
 // https://www.youtube.com/watch?v=7PYvx8u_9Sk 여기 참조
-const CanvasMouseDown = (event) => {
+let CanvasMouseDown = function (event) {
     event.preventDefault();
 
-    let startX = parseInt(event.clientX);
-    let startY = parseInt(evnet.clientY);
+    initialX = parseInt(event.offsetX);
+    initialY = parseInt(event.offsetY);
 
-    let index = 0;
-
+    if (IsMouseInShape(initialX, initialY, {x: scrollButtonLeft, y: scrollButtonTop, width: scrollButtonWidth, height: scrollButtonHeight})) {
+        IsButtonMoving = true;
+    }
 };
+
+let CanvasMouseMove = function (event) {
+    if (IsButtonMoving) {
+        event.preventDefault();
+
+        let newX = parseInt(event.offsetX);
+
+        scrollButtonLeft = scrollButtonLeft - (initialX - newX);
+        initialX = newX;
+
+        if (scrollButtonLeft < scrollerLeft) {
+            scrollButtonLeft = scrollerLeft;
+        } else if (scrollButtonLeft + scrollButtonWidth > scrollerLeft + scrollerWidth) {
+            scrollButtonLeft = scrollerLeft + scrollerWidth - scrollButtonWidth;
+        }
+
+        // 텍스트 정보 업데이트
+        startPoint = 2000 * ((scrollButtonLeft - scrollerLeft) / scrollerWidth);
+        endPoint = 2000 * ((scrollButtonLeft + scrollButtonWidth - scrollerLeft) / scrollerWidth);
+
+        startText.setAttribute("value", startPoint.toString(10));
+        endText.setAttribute("value", endPoint.toString(10));
+    }
+};
+
+let CanvasMouseUp = function (event) {
+    event.preventDefault();
+
+    if (IsButtonMoving) {
+        IsButtonMoving = false;
+    }
+};
+
+scroll_canvas.onmousedown = CanvasMouseDown;
+scroll_canvas.onmousemove = CanvasMouseMove;
+scroll_canvas.onmouseup = CanvasMouseUp;
