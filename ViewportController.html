@@ -8,7 +8,16 @@
 <div id="base"></div>
 <script src="ViewportController.js"></script>
 <script>
-  ViewportControlAction.init();
+  ViewportControlAction.init(10000, 2000, 2100);
+
+  ViewportControlAction.eventAlert = (op, params) => {
+      // op: 'move' or 'scale'
+      // params: move => [start]
+      //         scale => [start, end];
+    console.log('op: ', op);
+    console.log('params: ', JSON.stringify(params));
+  };
+
 </script>
 </body>
 </html>
